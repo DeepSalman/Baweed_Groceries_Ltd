@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Suppliers - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+<div class="drawer lg:drawer-open">
+    <input id="d" type="checkbox" class="drawer-toggle">
+    <div class="drawer-content flex flex-col min-h-screen">
+        <div class="navbar bg-gray-900 text-white lg:hidden px-4 py-2 sticky top-0 z-10">
+            <label for="d" class="btn btn-ghost btn-sm text-white mr-2">&#9776;</label>
+            <span class="font-bold">Suppliers</span>
+        </div>
+        <main class="flex-1 p-4 md:p-6">
+
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Suppliers</h1>
+                <button onclick="openModal()" class="btn btn-primary btn-sm">+ Add Supplier</button>
+            </div>
+
+            <div class="card bg-white shadow-sm overflow-x-auto">
+                <table class="table">
+                    <thead><tr class="text-gray-400 text-xs bg-gray-50">
+                        <th>Name</th><th>Email</th><th>Phone</th><th>Product Supplied</th><th>Address</th><th>Actions</th>
+                    </tr></thead>
+                    <tbody id="suppliersTable">
+                        <tr><td colspan="6" class="text-center py-8">
+                            <span class="loading loading-spinner text-primary"></span>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+    </div>
+    <div class="drawer-side z-20">
+        <label for="d" class="drawer-overlay"></label>
+        <div id="adminSidebar"></div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+    <div class="bg-white rounded-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <h3 id="modalTitle" class="text-lg font-bold text-gray-800 mb-4">Add Supplier</h3>
+            <form id="supplierForm" class="space-y-3">
+                <input type="hidden" id="editId"/>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="form-control col-span-2">
+                        <label class="label"><span class="label-text font-medium">Full name</span></label>
+                        <input id="sName" type="text" class="input input-bordered" required/>
+                    </div>
+                    <div class="form-control col-span-2">
+                        <label class="label"><span class="label-text font-medium">Address</span></label>
+                        <input id="sAddr" type="text" class="input input-bordered" required/>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-medium">Email</span></label>
+                        <input id="sEmail" type="email" class="input input-bordered" required/>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-medium">Phone</span></label>
+                        <input id="sPhone" type="tel" class="input input-bordered" required/>
+                    </div>
+                </div>
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-medium">Product supplied</span></label>
+                    <select id="sProduct" class="select select-bordered" required>
+                        <option value="">Select a product...</option>
+                    </select>
+                </div>
+                <div id="modalError" class="text-error text-sm hidden"></div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal()" class="btn btn-ghost btn-sm">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Supplier</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/js/admin-sidebar.js"></script>
+<script>
+    let suppliers = [], products = [];
+
+    async function load() {
+        const [sRes, pRes] = await Promise.all([
+            fetch('/api/admin/suppliers'),
+            fetch('/api/admin/products')
+        ]);
+        suppliers = (await sRes.json()).suppliers || [];
+        products  = (await pRes.json()).products  || [];
+        renderTable();
+        populateProductDropdown();
+    }
+
+    function renderTable() {
+        document.getElementById('suppliersTable').innerHTML = suppliers.length === 0
+            ? `<tr><td colspan="6" class="text-center py-8 text-gray-400">No suppliers yet</td></tr>`
+            : suppliers.map(s => `
+                <tr class="hover">
+                    <td class="font-medium">${s.full_name}</td>
+                    <td class="text-sm text-gray-500">${s.email}</td>
+                    <td class="text-sm text-gray-500">${s.phone}</td>
+                    <td><span class="badge badge-ghost badge-sm">${s.product_name}</span></td>
+                    <td class="text-xs text-gray-400 max-w-xs truncate">${s.address}</td>
+                    <td class="flex gap-2">
+                        <button onclick="openEdit(${s.id})" class="btn btn-xs btn-ghost text-blue-600">Edit</button>
+                        <button onclick="del(${s.id})" class="btn btn-xs btn-ghost text-red-500">Delete</button>
+                    </td>
+                </tr>`).join('');
+    }
+
+    function populateProductDropdown() {
+        const sel = document.getElementById('sProduct');
+        const cur = sel.value;
+        sel.innerHTML = `<option value="">Select a product...</option>` +
+            products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        if (cur) sel.value = cur;
+    }
+
+    function openModal() {
+        document.getElementById('editId').value = '';
+        document.getElementById('modalTitle').textContent = 'Add Supplier';
+        document.getElementById('supplierForm').reset();
+        document.getElementById('modalError').classList.add('hidden');
+        document.getElementById('modal').classList.replace('hidden','flex');
+    }
+
+    function openEdit(id) {
+        const s = suppliers.find(x => x.id === id);
+        document.getElementById('editId').value  = s.id;
+        document.getElementById('sName').value   = s.full_name;
+        document.getElementById('sAddr').value   = s.address;
+        document.getElementById('sEmail').value  = s.email;
+        document.getElementById('sPhone').value  = s.phone;
+        document.getElementById('sProduct').value = s.product_id;
+        document.getElementById('modalTitle').textContent = 'Edit Supplier';
+        document.getElementById('modalError').classList.add('hidden');
+        document.getElementById('modal').classList.replace('hidden','flex');
+    }
+
+    function closeModal() {
+        document.getElementById('modal').classList.replace('flex','hidden');
+    }
+
+    document.getElementById('supplierForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id     = document.getElementById('editId').value;
+        const url    = id ? `/api/admin/suppliers/${id}` : '/api/admin/suppliers';
+        const method = id ? 'PUT' : 'POST';
+        const body   = {
+            full_name:  document.getElementById('sName').value,
+            address:    document.getElementById('sAddr').value,
+            email:      document.getElementById('sEmail').value,
+            phone:      document.getElementById('sPhone').value,
+            product_id: document.getElementById('sProduct').value
+        };
+        const res  = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (res.ok) {
+            closeModal(); load();
+            showToast(id ? 'Supplier updated' : 'Supplier added');
+        } else {
+            const err = document.getElementById('modalError');
+            err.textContent = data.error; err.classList.remove('hidden');
+        }
+    });
+
+    async function del(id) {
+        if (!confirm('Delete this supplier?')) return;
+        const res  = await fetch(`/api/admin/suppliers/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        res.ok ? (load(), showToast('Supplier deleted')) : alert(data.error);
+    }
+
+    initAdmin();
+    load();
+</script>
+</body></html>

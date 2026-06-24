@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Invoices - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+<div class="drawer lg:drawer-open">
+    <input id="d" type="checkbox" class="drawer-toggle">
+    <div class="drawer-content flex flex-col min-h-screen">
+        <div class="navbar bg-gray-900 text-white lg:hidden px-4 py-2 sticky top-0 z-10">
+            <label for="d" class="btn btn-ghost btn-sm text-white mr-2">&#9776;</label>
+            <span class="font-bold">Invoices</span>
+        </div>
+        <main class="flex-1 p-4 md:p-6 space-y-6">
+
+            <h1 class="text-2xl font-bold text-gray-800">Supplier Invoices</h1>
+
+            <!-- Generate panel -->
+            <div class="card bg-white shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="font-semibold text-gray-700 mb-3">Generate Monthly Invoices</h2>
+                    <p class="text-xs text-gray-400 mb-3">
+                        Select a month and click Generate. The system will create one invoice
+                        per supplier based on their deliveries in that month.
+                    </p>
+                    <div class="flex flex-wrap gap-3 items-end">
+                        <div class="form-control">
+                            <label class="label"><span class="label-text font-medium text-sm">Month</span></label>
+                            <input id="monthPicker" type="month" class="input input-bordered input-sm" required/>
+                        </div>
+                        <button onclick="generate()" class="btn btn-primary btn-sm">Generate Invoices</button>
+                    </div>
+                    <div id="genMsg" class="mt-3 text-sm hidden"></div>
+                </div>
+            </div>
+
+            <!-- Invoices table -->
+            <div class="card bg-white shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="font-bold text-gray-700 mb-3">All Invoices</h2>
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead><tr class="text-gray-400 text-xs bg-gray-50">
+                                <th>Invoice Month</th><th>Supplier</th><th>Product</th>
+                                <th>Items</th><th>Amount</th><th>Status</th><th>Action</th>
+                            </tr></thead>
+                            <tbody id="invoicesTable">
+                                <tr><td colspan="7" class="text-center py-8">
+                                    <span class="loading loading-spinner text-primary"></span>
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <div class="drawer-side z-20">
+        <label for="d" class="drawer-overlay"></label>
+        <div id="adminSidebar"></div>
+    </div>
+</div>
+
+<script src="/js/admin-sidebar.js"></script>
+<script>
+    async function load() {
+        const res  = await fetch('/api/admin/invoices');
+        const data = await res.json();
+        render(data.invoices || []);
+    }
+
+    function render(list) {
+        document.getElementById('invoicesTable').innerHTML = list.length === 0
+            ? `<tr><td colspan="7" class="text-center py-8 text-gray-400">No invoices yet — generate one above</td></tr>`
+            : list.map(inv => `
+                <tr class="hover">
+                    <td class="font-medium">${inv.invoice_month}</td>
+                    <td>${inv.supplier_name}</td>
+                    <td><span class="badge badge-ghost badge-sm">${inv.product_name}</span></td>
+                    <td>${inv.total_items}</td>
+                    <td class="font-semibold">£${parseFloat(inv.total_amount).toFixed(2)}</td>
+                    <td>
+                        ${inv.paid
+                            ? `<span class="badge badge-success badge-sm">Paid</span>
+                               <span class="block text-xs text-gray-400 mt-0.5">${new Date(inv.paid_at).toLocaleDateString('en-GB')}</span>`
+                            : `<span class="badge badge-warning badge-sm">Unpaid</span>`}
+                    </td>
+                    <td>
+                        ${inv.paid
+                            ? `<span class="text-gray-300 text-xs">—</span>`
+                            : `<button onclick="markPaid(${inv.id})" class="btn btn-xs btn-success">Mark Paid</button>`}
+                    </td>
+                </tr>`).join('');
+    }
+
+    async function generate() {
+        const month = document.getElementById('monthPicker').value;
+        if (!month) { showMsg('Please select a month', false); return; }
+        const res  = await fetch('/api/admin/invoices/generate', {
+            method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ month })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showMsg(data.message, true);
+            load();
+        } else {
+            showMsg(data.error, false);
+        }
+    }
+
+    function showMsg(text, ok) {
+        const el = document.getElementById('genMsg');
+        el.textContent = text;
+        el.className = `mt-3 text-sm ${ok ? 'text-green-600' : 'text-red-500'}`;
+        el.classList.remove('hidden');
+        setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+
+    async function markPaid(id) {
+        const res  = await fetch(`/api/admin/invoices/${id}/pay`, { method: 'PUT' });
+        const data = await res.json();
+        res.ok ? (load(), showToast('Invoice marked as paid')) : alert(data.error);
+    }
+
+    // Default month picker to current month
+    document.getElementById('monthPicker').value = new Date().toISOString().slice(0,7);
+
+    initAdmin();
+    load();
+</script>
+</body></html>

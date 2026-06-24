@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Inventory - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+<div class="drawer lg:drawer-open">
+    <input id="d" type="checkbox" class="drawer-toggle">
+    <div class="drawer-content flex flex-col min-h-screen">
+        <div class="navbar bg-gray-900 text-white lg:hidden px-4 py-2 sticky top-0 z-10">
+            <label for="d" class="btn btn-ghost btn-sm text-white mr-2">&#9776;</label>
+            <span class="font-bold">Inventory</span>
+        </div>
+        <main class="flex-1 p-4 md:p-6 space-y-6">
+
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-800">Inventory</h1>
+                <button onclick="openModal()" class="btn btn-primary btn-sm">+ Record Delivery</button>
+            </div>
+
+            <!-- Stock summary -->
+            <div class="card bg-white shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="font-bold text-gray-700 mb-3">Stock Summary</h2>
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead><tr class="text-gray-400 text-xs bg-gray-50">
+                                <th>Product</th><th>Price</th>
+                                <th>Total Received</th><th>Total Sold</th>
+                                <th>Available</th><th>Sales Value</th>
+                            </tr></thead>
+                            <tbody id="summaryTable">
+                                <tr><td colspan="6" class="text-center py-6">
+                                    <span class="loading loading-spinner text-primary"></span>
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery history -->
+            <div class="card bg-white shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="font-bold text-gray-700 mb-3">Recent Deliveries</h2>
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead><tr class="text-gray-400 text-xs bg-gray-50">
+                                <th>Date</th><th>Supplier</th><th>Product</th>
+                                <th>Qty Received</th><th>Unit Cost</th><th>Total Cost</th><th>Notes</th>
+                            </tr></thead>
+                            <tbody id="deliveriesTable">
+                                <tr><td colspan="7" class="text-center py-4">
+                                    <span class="loading loading-spinner text-primary"></span>
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <div class="drawer-side z-20">
+        <label for="d" class="drawer-overlay"></label>
+        <div id="adminSidebar"></div>
+    </div>
+</div>
+
+<!-- Delivery modal -->
+<div id="modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+    <div class="bg-white rounded-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Record Delivery</h3>
+            <form id="deliveryForm" class="space-y-3">
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-medium">Supplier</span></label>
+                    <select id="dSupplier" class="select select-bordered" required>
+                        <option value="">Select supplier...</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-medium">Product</span></label>
+                    <input id="dProduct" type="text" class="input input-bordered bg-gray-50" readonly placeholder="Auto-filled from supplier"/>
+                    <input type="hidden" id="dProductId"/>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-medium">Quantity</span></label>
+                        <input id="dQty" type="number" min="1" class="input input-bordered" required/>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-medium">Unit cost (£)</span></label>
+                        <input id="dCost" type="number" step="0.01" min="0" class="input input-bordered" required/>
+                    </div>
+                </div>
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-medium">Date received</span></label>
+                    <input id="dDate" type="date" class="input input-bordered" required/>
+                </div>
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-medium">Notes <span class="text-gray-400">(optional)</span></span></label>
+                    <textarea id="dNotes" class="textarea textarea-bordered" rows="2"></textarea>
+                </div>
+                <div id="modalError" class="text-error text-sm hidden"></div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal()" class="btn btn-ghost btn-sm">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Record Delivery</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/js/admin-sidebar.js"></script>
+<script>
+    let suppliers = [];
+
+    async function load() {
+        const [iRes, sRes] = await Promise.all([
+            fetch('/api/admin/inventory'),
+            fetch('/api/admin/suppliers')
+        ]);
+        const inv  = await iRes.json();
+        const sData = await sRes.json();
+        suppliers = sData.suppliers || [];
+
+        renderSummary(inv.summary || []);
+        renderDeliveries(inv.deliveries || []);
+        populateSuppliers();
+    }
+
+    function renderSummary(rows) {
+        document.getElementById('summaryTable').innerHTML = rows.length === 0
+            ? `<tr><td colspan="6" class="text-center py-6 text-gray-400">No products yet</td></tr>`
+            : rows.map(r => `
+                <tr class="hover">
+                    <td class="font-medium">${r.name}</td>
+                    <td>£${parseFloat(r.price).toFixed(2)}</td>
+                    <td>${r.total_received}</td>
+                    <td>${r.total_sold}</td>
+                    <td class="${r.total_available < 20 ? 'text-orange-500 font-bold' : 'font-semibold'}">${r.total_available}</td>
+                    <td class="text-green-700 font-medium">£${parseFloat(r.total_sales_amount).toFixed(2)}</td>
+                </tr>`).join('');
+    }
+
+    function renderDeliveries(rows) {
+        document.getElementById('deliveriesTable').innerHTML = rows.length === 0
+            ? `<tr><td colspan="7" class="text-center py-6 text-gray-400">No deliveries recorded</td></tr>`
+            : rows.map(d => `
+                <tr class="hover">
+                    <td class="text-sm">${new Date(d.date_received).toLocaleDateString('en-GB')}</td>
+                    <td class="text-sm font-medium">${d.supplier_name}</td>
+                    <td><span class="badge badge-ghost badge-sm">${d.product_name}</span></td>
+                    <td>${d.quantity_received}</td>
+                    <td>£${parseFloat(d.unit_cost).toFixed(2)}</td>
+                    <td class="font-semibold">£${(d.quantity_received * d.unit_cost).toFixed(2)}</td>
+                    <td class="text-xs text-gray-400">${d.notes || '—'}</td>
+                </tr>`).join('');
+    }
+
+    function populateSuppliers() {
+        document.getElementById('dSupplier').innerHTML =
+            `<option value="">Select supplier...</option>` +
+            suppliers.map(s => `<option value="${s.id}" data-pid="${s.product_id}" data-pname="${s.product_name}">${s.full_name}</option>`).join('');
+    }
+
+    document.getElementById('dSupplier').addEventListener('change', function () {
+        const opt = this.options[this.selectedIndex];
+        document.getElementById('dProduct').value = opt.dataset.pname || '';
+        document.getElementById('dProductId').value = opt.dataset.pid || '';
+    });
+
+    function openModal() {
+        document.getElementById('deliveryForm').reset();
+        document.getElementById('dProduct').value = '';
+        document.getElementById('dProductId').value = '';
+        document.getElementById('dDate').value = new Date().toISOString().slice(0,10);
+        document.getElementById('modalError').classList.add('hidden');
+        document.getElementById('modal').classList.replace('hidden','flex');
+    }
+
+    function closeModal() {
+        document.getElementById('modal').classList.replace('flex','hidden');
+    }
+
+    document.getElementById('deliveryForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const body = {
+            supplier_id:       document.getElementById('dSupplier').value,
+            product_id:        document.getElementById('dProductId').value,
+            quantity_received: document.getElementById('dQty').value,
+            unit_cost:         document.getElementById('dCost').value,
+            date_received:     document.getElementById('dDate').value,
+            notes:             document.getElementById('dNotes').value
+        };
+        const res  = await fetch('/api/admin/inventory', {
+            method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            closeModal(); load();
+            showToast('Delivery recorded — stock updated');
+        } else {
+            const err = document.getElementById('modalError');
+            err.textContent = data.error; err.classList.remove('hidden');
+        }
+    });
+
+    initAdmin();
+    load();
+</script>
+</body></html>

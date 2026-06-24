@@ -22,7 +22,7 @@ app.use('/api/auth',     require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/cart',     require('./routes/cart'));
 app.use('/api/orders',   require('./routes/orders'));
-// app.use('/api/admin',    require('./routes/admin'));     // Step 6
+app.use('/api/admin',    require('./routes/admin'));
 
 // HTML page routes
 app.get('/',                   (req, res) => res.sendFile(path.join(__dirname, 'views/index.html')));
@@ -32,7 +32,13 @@ app.get('/products.html',      (req, res) => res.sendFile(path.join(__dirname, '
 app.get('/cart.html',          (req, res) => res.sendFile(path.join(__dirname, 'views/cart.html')));
 app.get('/checkout.html',      (req, res) => res.sendFile(path.join(__dirname, 'views/checkout.html')));
 app.get('/receipt.html',       (req, res) => res.sendFile(path.join(__dirname, 'views/receipt.html')));
-app.get('/admin/login.html',   (req, res) => res.sendFile(path.join(__dirname, 'views/admin/login.html')));
+app.get('/admin/login.html',     (req, res) => res.sendFile(path.join(__dirname, 'views/admin/login.html')));
+app.get('/admin/dashboard.html', (req, res) => res.sendFile(path.join(__dirname, 'views/admin/dashboard.html')));
+app.get('/admin/products.html',  (req, res) => res.sendFile(path.join(__dirname, 'views/admin/products.html')));
+app.get('/admin/suppliers.html', (req, res) => res.sendFile(path.join(__dirname, 'views/admin/suppliers.html')));
+app.get('/admin/inventory.html', (req, res) => res.sendFile(path.join(__dirname, 'views/admin/inventory.html')));
+app.get('/admin/invoices.html',  (req, res) => res.sendFile(path.join(__dirname, 'views/admin/invoices.html')));
+app.get('/admin/orders.html',    (req, res) => res.sendFile(path.join(__dirname, 'views/admin/orders.html')));
 
 app.listen(PORT, () => {
     console.log(`Baweed Groceries running at http://localhost:${PORT}`);
