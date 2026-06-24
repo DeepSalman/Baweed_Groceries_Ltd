@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout - Baweed Groceries</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-50">
+
+    <div id="navbar"></div>
+
+    <div class="max-w-6xl mx-auto px-4 py-8">
+
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Checkout</h1>
+
+        <!-- Error alert -->
+        <div id="errorAlert" class="alert alert-error mb-6 hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span id="errorMsg"></span>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-6">
+
+            <!-- ── Left: Forms ────────────────────────────── -->
+            <div class="lg:col-span-2 space-y-5">
+
+                <!-- Contact details -->
+                <div class="card bg-white shadow-sm">
+                    <div class="card-body gap-3">
+                        <h2 class="text-lg font-bold text-gray-700">Contact Details</h2>
+                        <div class="grid sm:grid-cols-2 gap-3">
+                            <div class="form-control">
+                                <label class="label"><span class="label-text font-medium">Full name</span></label>
+                                <input id="full_name" type="text" placeholder="John Smith"
+                                       class="input input-bordered" required />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text font-medium">Email</span></label>
+                                <input id="email" type="email" placeholder="you@example.com"
+                                       class="input input-bordered" required />
+                            </div>
+                        </div>
+                        <div class="form-control">
+                            <label class="label"><span class="label-text font-medium">Phone <span class="text-gray-400">(optional)</span></span></label>
+                            <input id="phone" type="tel" placeholder="07700 900000"
+                                   class="input input-bordered" />
+                        </div>
+                        <p id="guestNote" class="text-xs text-gray-400 hidden">
+                            <a href="/login.html" class="text-green-600 hover:underline">Login</a> or
+                            <a href="/register.html" class="text-green-600 hover:underline">create an account</a> to track your orders.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Shipping address -->
+                <div class="card bg-white shadow-sm">
+                    <div class="card-body gap-3">
+                        <h2 class="text-lg font-bold text-gray-700">Shipping Address</h2>
+                        <div class="form-control">
+                            <label class="label"><span class="label-text font-medium">Street address</span></label>
+                            <input id="address" type="text" placeholder="123 High Street"
+                                   class="input input-bordered" required />
+                        </div>
+                        <div class="grid sm:grid-cols-2 gap-3">
+                            <div class="form-control">
+                                <label class="label"><span class="label-text font-medium">City</span></label>
+                                <input id="city" type="text" placeholder="London"
+                                       class="input input-bordered" required />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text font-medium">Postcode</span></label>
+                                <input id="postcode" type="text" placeholder="EC1A 1BB"
+                                       class="input input-bordered" required />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment method -->
+                <div class="card bg-white shadow-sm">
+                    <div class="card-body gap-4">
+                        <h2 class="text-lg font-bold text-gray-700">Payment Method</h2>
+
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer hover:bg-gray-50 transition-colors has-[:checked]:border-green-500 has-[:checked]:bg-green-50">
+                                <input type="radio" name="payment" value="card_before" class="radio radio-primary" />
+                                <div>
+                                    <p class="font-medium text-gray-800">Pay by card now</p>
+                                    <p class="text-xs text-gray-500">Credit or debit card — charged immediately</p>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer hover:bg-gray-50 transition-colors has-[:checked]:border-green-500 has-[:checked]:bg-green-50">
+                                <input type="radio" name="payment" value="cash_after" class="radio radio-primary" />
+                                <div>
+                                    <p class="font-medium text-gray-800">Pay cash on delivery</p>
+                                    <p class="text-xs text-gray-500">Pay in cash when your order arrives</p>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer hover:bg-gray-50 transition-colors has-[:checked]:border-green-500 has-[:checked]:bg-green-50">
+                                <input type="radio" name="payment" value="card_after" class="radio radio-primary" />
+                                <div>
+                                    <p class="font-medium text-gray-800">Pay by card on delivery</p>
+                                    <p class="text-xs text-gray-500">Card reader brought to your door</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Card form — shown only for card_before -->
+                        <div id="cardSection" class="hidden border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3">
+                            <p class="text-sm font-semibold text-gray-700">Card Details</p>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text text-sm">Card number</span></label>
+                                <input id="card_number" type="text" placeholder="4111 1111 1111 1111"
+                                       maxlength="19" class="input input-bordered input-sm font-mono tracking-widest" />
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="form-control">
+                                    <label class="label"><span class="label-text text-sm">Month</span></label>
+                                    <input id="expiry_month" type="number" placeholder="MM" min="1" max="12"
+                                           class="input input-bordered input-sm" />
+                                </div>
+                                <div class="form-control">
+                                    <label class="label"><span class="label-text text-sm">Year</span></label>
+                                    <input id="expiry_year" type="number" placeholder="YYYY" min="2025"
+                                           class="input input-bordered input-sm" />
+                                </div>
+                                <div class="form-control">
+                                    <label class="label"><span class="label-text text-sm">CVV</span></label>
+                                    <input id="cvv" type="text" placeholder="123" maxlength="3"
+                                           class="input input-bordered input-sm" />
+                                </div>
+                            </div>
+                            <div class="text-xs text-gray-400">
+                                Test card: <span class="font-mono">4111 1111 1111 1111</span> — Exp: 12/2027 — CVV: 123
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ── Right: Order Summary ────────────────────── -->
+            <div>
+                <div class="card bg-white shadow-sm sticky top-24">
+                    <div class="card-body gap-3">
+                        <h2 class="text-lg font-bold text-gray-700">Order Summary</h2>
+
+                        <div id="summaryItems" class="space-y-2 text-sm text-gray-700">
+                            <div class="flex justify-center py-4">
+                                <span class="loading loading-spinner text-primary"></span>
+                            </div>
+                        </div>
+
+                        <div class="divider my-1"></div>
+
+                        <div class="flex justify-between text-sm text-gray-500">
+                            <span>Delivery</span>
+                            <span class="text-green-600 font-medium">Free</span>
+                        </div>
+                        <div class="flex justify-between font-bold text-gray-800 text-lg">
+                            <span>Total</span>
+                            <span id="summaryTotal">£0.00</span>
+                        </div>
+
+                        <button id="placeOrderBtn" onclick="placeOrder()"
+                                class="btn btn-primary w-full mt-2">
+                            Place Order
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="/js/nav.js"></script>
+    <script>
+        // Show/hide card section on payment method change
+        document.querySelectorAll('input[name="payment"]').forEach(r => {
+            r.addEventListener('change', () => {
+                document.getElementById('cardSection').classList.toggle('hidden', r.value !== 'card_before');
+            });
+        });
+
+        // Format card number with spaces
+        document.getElementById('card_number').addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+        });
+
+        // Pre-fill contact if logged in
+        async function prefill() {
+            const res  = await fetch('/api/auth/me');
+            const data = await res.json();
+            if (data.user) {
+                document.getElementById('full_name').value = data.user.full_name;
+                document.getElementById('email').value     = data.user.email;
+            } else {
+                document.getElementById('guestNote').classList.remove('hidden');
+            }
+        }
+
+        // Load cart items into summary
+        async function loadSummary() {
+            const res  = await fetch('/api/cart');
+            const data = await res.json();
+
+            if (!data.items || data.items.length === 0) {
+                window.location.href = '/cart.html';
+                return;
+            }
+
+            document.getElementById('summaryItems').innerHTML = data.items.map(i => `
+                <div class="flex justify-between">
+                    <span>${i.name} <span class="text-gray-400">x${i.quantity}</span></span>
+                    <span>£${(i.price * i.quantity).toFixed(2)}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('summaryTotal').textContent = `£${parseFloat(data.total).toFixed(2)}`;
+        }
+
+        function showError(msg) {
+            const div = document.getElementById('errorAlert');
+            document.getElementById('errorMsg').textContent = msg;
+            div.classList.remove('hidden');
+            div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        async function placeOrder() {
+            document.getElementById('errorAlert').classList.add('hidden');
+
+            const payMethod = document.querySelector('input[name="payment"]:checked')?.value;
+            if (!payMethod) { showError('Please select a payment method.'); return; }
+
+            const btn = document.getElementById('placeOrderBtn');
+            btn.disabled    = true;
+            btn.textContent = 'Placing order...';
+
+            const body = {
+                shipping: {
+                    full_name: document.getElementById('full_name').value.trim(),
+                    email:     document.getElementById('email').value.trim(),
+                    phone:     document.getElementById('phone').value.trim(),
+                    address:   document.getElementById('address').value.trim(),
+                    city:      document.getElementById('city').value.trim(),
+                    postcode:  document.getElementById('postcode').value.trim()
+                },
+                payment: { method: payMethod }
+            };
+
+            if (payMethod === 'card_before') {
+                body.payment.card_number    = document.getElementById('card_number').value;
+                body.payment.expiry_month   = document.getElementById('expiry_month').value;
+                body.payment.expiry_year    = document.getElementById('expiry_year').value;
+                body.payment.cvv            = document.getElementById('cvv').value;
+            }
+
+            try {
+                const res  = await fetch('/api/orders', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify(body)
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    window.location.href = `/receipt.html?order=${data.order_id}`;
+                } else {
+                    showError(data.error);
+                }
+            } catch {
+                showError('Something went wrong. Please try again.');
+            } finally {
+                btn.disabled    = false;
+                btn.textContent = 'Place Order';
+            }
+        }
+
+        prefill();
+        loadSummary();
+    </script>
+
+</body>
+</html>

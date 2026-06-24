@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order Confirmation - Baweed Groceries</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-50">
+
+    <div id="navbar"></div>
+
+    <div class="max-w-2xl mx-auto px-4 py-10" id="receiptPage">
+
+        <!-- Loading -->
+        <div id="loadingState" class="text-center py-20">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+        </div>
+
+        <!-- Receipt -->
+        <div id="receiptContent" class="hidden">
+
+            <!-- Success banner -->
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800">Order Confirmed!</h1>
+                <p class="text-gray-500 mt-1">Thank you for shopping with Baweed Groceries</p>
+                <p id="emailNote" class="text-sm text-green-600 mt-1"></p>
+            </div>
+
+            <!-- Receipt card -->
+            <div class="card bg-white shadow-sm" id="printArea">
+                <div class="card-body gap-5">
+
+                    <!-- Header -->
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xl font-bold text-green-700">Baweed Groceries Ltd</p>
+                            <p class="text-xs text-gray-400 mt-0.5">baweed.co.uk</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-gray-800" id="orderId"></p>
+                            <p class="text-xs text-gray-400" id="orderDate"></p>
+                        </div>
+                    </div>
+
+                    <div class="divider my-0"></div>
+
+                    <!-- Items -->
+                    <div>
+                        <p class="font-semibold text-gray-700 mb-3">Items Ordered</p>
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-gray-400 text-xs border-b">
+                                    <th class="text-left pb-2">Product</th>
+                                    <th class="text-center pb-2">Qty</th>
+                                    <th class="text-right pb-2">Price</th>
+                                    <th class="text-right pb-2">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsTable"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="divider my-0"></div>
+
+                    <!-- Totals -->
+                    <div class="space-y-1 text-sm">
+                        <div class="flex justify-between text-gray-500">
+                            <span>Delivery</span>
+                            <span class="text-green-600">Free</span>
+                        </div>
+                        <div class="flex justify-between font-bold text-lg text-gray-800">
+                            <span>Total Paid</span>
+                            <span id="totalDisplay"></span>
+                        </div>
+                    </div>
+
+                    <div class="divider my-0"></div>
+
+                    <!-- Details grid -->
+                    <div class="grid sm:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="font-semibold text-gray-700 mb-1">Shipping Address</p>
+                            <p id="shippingAddress" class="text-gray-500 leading-relaxed"></p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-700 mb-1">Payment</p>
+                            <p id="paymentInfo" class="text-gray-500"></p>
+                            <p id="paymentStatus" class="font-medium mt-1"></p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex flex-col sm:flex-row gap-3 mt-6 justify-center">
+                <button onclick="window.print()" class="btn btn-outline btn-sm">Print Receipt</button>
+                <a href="/products.html" class="btn btn-primary btn-sm">Continue Shopping</a>
+                <a id="ordersLink" href="/orders.html" class="btn btn-ghost btn-sm hidden">View My Orders</a>
+            </div>
+
+        </div>
+
+        <!-- Error -->
+        <div id="errorState" class="hidden text-center py-20">
+            <p class="text-error text-lg mb-4">Order not found.</p>
+            <a href="/" class="btn btn-primary">Go Home</a>
+        </div>
+
+    </div>
+
+    <style>
+        @media print {
+            #navbar, button, a.btn { display: none !important; }
+            body { background: white; }
+            #printArea { box-shadow: none; }
+        }
+    </style>
+
+    <script src="/js/nav.js"></script>
+    <script>
+        const PAYMENT_LABELS = {
+            card_before: 'Card (paid now)',
+            cash_after:  'Cash on delivery',
+            card_after:  'Card on delivery'
+        };
+
+        async function loadReceipt() {
+            const params  = new URLSearchParams(window.location.search);
+            const orderId = params.get('order');
+            if (!orderId) { showError(); return; }
+
+            try {
+                const res  = await fetch(`/api/orders/${orderId}`);
+                if (!res.ok) { showError(); return; }
+                const data = await res.json();
+
+                renderReceipt(data.order, data.items);
+            } catch {
+                showError();
+            }
+        }
+
+        function renderReceipt(order, items) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('receiptContent').classList.remove('hidden');
+
+            // Header
+            document.getElementById('orderId').textContent =
+                `Order #${String(order.id).padStart(5, '0')}`;
+            document.getElementById('orderDate').textContent =
+                new Date(order.created_at).toLocaleDateString('en-GB', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                });
+
+            // Email note
+            const email = order.guest_email || '';
+            if (email) {
+                document.getElementById('emailNote').textContent =
+                    `A confirmation has been sent to ${email}`;
+            }
+
+            // Items table
+            document.getElementById('itemsTable').innerHTML = items.map(i => `
+                <tr class="border-b border-gray-50">
+                    <td class="py-2 text-gray-800">${i.product_name}</td>
+                    <td class="py-2 text-center text-gray-500">${i.quantity}</td>
+                    <td class="py-2 text-right text-gray-500">£${parseFloat(i.unit_price).toFixed(2)}</td>
+                    <td class="py-2 text-right font-medium text-gray-800">£${(i.unit_price * i.quantity).toFixed(2)}</td>
+                </tr>
+            `).join('');
+
+            // Total
+            document.getElementById('totalDisplay').textContent =
+                `£${parseFloat(order.total_amount).toFixed(2)}`;
+
+            // Shipping
+            document.getElementById('shippingAddress').innerHTML =
+                `${order.shipping_address}<br>${order.shipping_city}<br>${order.shipping_postcode}`;
+
+            // Payment
+            document.getElementById('paymentInfo').textContent =
+                PAYMENT_LABELS[order.payment_method] || order.payment_method;
+
+            const statusEl = document.getElementById('paymentStatus');
+            if (order.payment_status === 'paid') {
+                statusEl.textContent   = 'Payment received';
+                statusEl.classList.add('text-green-600');
+            } else {
+                statusEl.textContent   = 'Payment due on delivery';
+                statusEl.classList.add('text-orange-500');
+            }
+
+            // Show "My Orders" link if user is logged in
+            fetch('/api/auth/me').then(r => r.json()).then(data => {
+                if (data.user) {
+                    document.getElementById('ordersLink').classList.remove('hidden');
+                }
+            });
+        }
+
+        function showError() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+        }
+
+        loadReceipt();
+    </script>
+
+</body>
+</html>

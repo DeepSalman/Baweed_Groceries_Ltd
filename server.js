@@ -21,7 +21,7 @@ app.use(session({
 app.use('/api/auth',     require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/cart',     require('./routes/cart'));
-// app.use('/api/orders',   require('./routes/orders'));    // Step 5
+app.use('/api/orders',   require('./routes/orders'));
 // app.use('/api/admin',    require('./routes/admin'));     // Step 6
 
 // HTML page routes
@@ -30,6 +30,8 @@ app.get('/login.html',         (req, res) => res.sendFile(path.join(__dirname, '
 app.get('/register.html',      (req, res) => res.sendFile(path.join(__dirname, 'views/register.html')));
 app.get('/products.html',      (req, res) => res.sendFile(path.join(__dirname, 'views/products.html')));
 app.get('/cart.html',          (req, res) => res.sendFile(path.join(__dirname, 'views/cart.html')));
+app.get('/checkout.html',      (req, res) => res.sendFile(path.join(__dirname, 'views/checkout.html')));
+app.get('/receipt.html',       (req, res) => res.sendFile(path.join(__dirname, 'views/receipt.html')));
 app.get('/admin/login.html',   (req, res) => res.sendFile(path.join(__dirname, 'views/admin/login.html')));
 
 app.listen(PORT, () => {
