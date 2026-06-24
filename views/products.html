@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Products - Baweed Groceries</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-50">
+
+    <div id="navbar"></div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast toast-top toast-end z-50 hidden">
+        <div id="toastAlert" class="alert alert-success shadow-lg">
+            <span id="toastMsg"></span>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+
+        <!-- Header + Search -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Fresh Vegetables</h1>
+                <p class="text-gray-500 text-sm mt-1" id="productCount">Loading...</p>
+            </div>
+            <div class="join w-full sm:w-auto">
+                <input id="searchInput" type="text" placeholder="Search products..."
+                       class="input input-bordered join-item w-full sm:w-64" />
+                <button onclick="searchProducts()" class="btn btn-primary join-item">Search</button>
+            </div>
+        </div>
+
+        <!-- Grid -->
+        <div id="productGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div class="col-span-full flex justify-center py-16">
+                <span class="loading loading-spinner loading-lg text-primary"></span>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="/js/nav.js"></script>
+    <script>
+        const COLORS = [
+            'bg-red-100 text-red-600',
+            'bg-orange-100 text-orange-600',
+            'bg-yellow-100 text-yellow-600',
+            'bg-green-100 text-green-600',
+            'bg-teal-100 text-teal-600',
+            'bg-blue-100 text-blue-600',
+            'bg-purple-100 text-purple-600',
+            'bg-amber-100 text-amber-600'
+        ];
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastAlert').className = `alert alert-${type} shadow-lg`;
+            document.getElementById('toastMsg').textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        function renderProducts(products) {
+            const grid  = document.getElementById('productGrid');
+            const count = document.getElementById('productCount');
+
+            count.textContent = `Showing ${products.length} product${products.length !== 1 ? 's' : ''}`;
+
+            if (products.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-16">
+                        <p class="text-gray-400 text-lg mb-3">No products found.</p>
+                        <button onclick="loadProducts()" class="btn btn-outline btn-sm">Show all products</button>
+                    </div>`;
+                return;
+            }
+
+            grid.innerHTML = products.map((p, i) => `
+                <div class="card bg-white shadow hover:shadow-lg transition-all duration-200">
+                    <figure class="${COLORS[i % COLORS.length].split(' ')[0]} h-36 flex items-center justify-center rounded-t-2xl">
+                        ${p.image
+                            ? `<img src="/uploads/${p.image}" alt="${p.name}" class="h-full w-full object-cover rounded-t-2xl"/>`
+                            : `<span class="text-6xl font-bold ${COLORS[i % COLORS.length].split(' ')[1]} opacity-40 select-none">${p.name.charAt(0).toUpperCase()}</span>`
+                        }
+                    </figure>
+                    <div class="card-body p-4 gap-1">
+                        <h3 class="font-semibold text-gray-800 text-sm">${p.name}</h3>
+                        <p class="text-green-700 font-bold text-xl">£${parseFloat(p.price).toFixed(2)}</p>
+                        <p class="text-xs text-gray-400 mb-2">
+                            ${p.stock_quantity > 0
+                                ? `<span class="text-green-500">${p.stock_quantity} in stock</span>`
+                                : `<span class="text-red-400">Out of stock</span>`}
+                        </p>
+                        ${p.stock_quantity > 0
+                            ? `<button id="btn-${p.id}" onclick="addToCart(${p.id}, '${p.name}', this)"
+                                   class="btn btn-primary btn-sm w-full">Add to Cart</button>`
+                            : `<button class="btn btn-disabled btn-sm w-full" disabled>Out of Stock</button>`
+                        }
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadProducts(search = '') {
+            document.getElementById('productGrid').innerHTML = `
+                <div class="col-span-full flex justify-center py-16">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                </div>`;
+            try {
+                const url = search
+                    ? `/api/products?search=${encodeURIComponent(search)}`
+                    : '/api/products';
+                const res  = await fetch(url);
+                const data = await res.json();
+                renderProducts(data.products || []);
+            } catch {
+                document.getElementById('productGrid').innerHTML =
+                    `<div class="col-span-full text-center py-8 text-error">Failed to load products.</div>`;
+            }
+        }
+
+        async function addToCart(productId, productName, btn) {
+            btn.disabled    = true;
+            btn.textContent = 'Adding...';
+            try {
+                const res  = await fetch('/api/cart/add', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ product_id: productId, quantity: 1 })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(data.message);
+                    loadNav();
+                } else {
+                    showToast(data.error, 'error');
+                }
+            } catch {
+                showToast('Something went wrong', 'error');
+            } finally {
+                btn.disabled    = false;
+                btn.textContent = 'Add to Cart';
+            }
+        }
+
+        function searchProducts() {
+            const q = document.getElementById('searchInput').value.trim();
+            loadProducts(q);
+        }
+
+        document.getElementById('searchInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') searchProducts();
+        });
+
+        loadProducts();
+    </script>
+
+</body>
+</html>
