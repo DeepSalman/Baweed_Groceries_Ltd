@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Baweed Groceries Ltd</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-base-100">
+
+    <!-- Navbar -->
+    <div class="navbar bg-white shadow-md px-6">
+        <div class="flex-1">
+            <span class="text-2xl font-bold text-green-700">Baweed Groceries Ltd</span>
+        </div>
+        <div class="flex-none gap-2">
+            <a href="/products.html" class="btn btn-ghost">Products</a>
+            <a href="/login.html" class="btn btn-ghost">Login</a>
+            <a href="/register.html" class="btn btn-primary">Register</a>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero min-h-[80vh] bg-green-50">
+        <div class="hero-content flex-col lg:flex-row-reverse gap-10">
+            <div class="max-w-sm">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-green-200 rounded-2xl h-32 flex items-center justify-center text-green-800 font-semibold text-sm">Tomatoes</div>
+                    <div class="bg-orange-200 rounded-2xl h-32 flex items-center justify-center text-orange-800 font-semibold text-sm">Carrots</div>
+                    <div class="bg-purple-200 rounded-2xl h-32 flex items-center justify-center text-purple-800 font-semibold text-sm">Onions</div>
+                    <div class="bg-red-200 rounded-2xl h-32 flex items-center justify-center text-red-800 font-semibold text-sm">Peppers</div>
+                </div>
+            </div>
+            <div>
+                <h1 class="text-5xl font-bold text-green-800">Fresh Groceries,<br/>Delivered to You</h1>
+                <p class="py-6 text-gray-600 text-lg max-w-md">
+                    Order fresh vegetables online from Baweed Groceries Ltd.
+                    Quality produce from trusted suppliers across the UK.
+                </p>
+                <div class="flex gap-3">
+                    <a href="/products.html" class="btn btn-primary btn-lg">Shop Now</a>
+                    <a href="/admin/login.html" class="btn btn-outline btn-sm self-end">Admin Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Strip -->
+    <div class="bg-white py-10">
+        <div class="max-w-4xl mx-auto grid grid-cols-3 gap-6 text-center px-6">
+            <div>
+                <div class="text-3xl font-bold text-green-600">Fresh</div>
+                <p class="text-gray-500 mt-1">Sourced from local UK suppliers</p>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-green-600">Fast</div>
+                <p class="text-gray-500 mt-1">Quick delivery to your door</p>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-green-600">Easy</div>
+                <p class="text-gray-500 mt-1">Simple online ordering</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer footer-center p-4 bg-base-200 text-base-content mt-auto">
+        <p>© 2024 Baweed Groceries Ltd — All rights reserved</p>
+    </footer>
+
+</body>
+</html>
